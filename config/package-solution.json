@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "webpart-analytics-client-side-solution",
+    "id": "17349b09-23dd-400a-a509-6741f147b051",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.18.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "webpart-analytics description"
+      },
+      "longDescription": {
+        "default": "webpart-analytics description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "webpart-analytics Feature",
+        "description": "The feature that activates elements of the webpart-analytics solution.",
+        "id": "a05e7ab1-6a7a-4955-95b0-3de49bde2305",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/webpart-analytics.sppkg"
+  }
+}
