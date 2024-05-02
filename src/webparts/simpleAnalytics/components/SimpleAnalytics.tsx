@@ -1,20 +1,23 @@
 import * as React from 'react';
 import styles from './SimpleAnalytics.module.scss';
 import type { ISimpleAnalyticsProps } from './ISimpleAnalyticsProps';
-import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
-import { DefaultButton, Dropdown, Stack, TextField } from '@fluentui/react';
+import { DefaultButton, Dropdown, IDropdownOption, Stack, TextField } from '@fluentui/react';
 import { ISimpleAnalyticsState } from './ISimpleAnalyticsState';
-import { IAnalyticsStat} from '../models/IAnalyticsStat';
+import { IAnalyticsStat } from '../models/IAnalyticsStat';
 import { IHubSite } from '../models/IHubsite';
+import { SharePointRestService } from '../services/SharePointRestService';
+import { FormEvent } from 'react';
 import { AnalyticsHelper } from '../helpers/AnalyticsHelpers';
 
 
 export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsProps, ISimpleAnalyticsState> {
 
-  private AnalyticsHelper = new AnalyticsHelper();
+  private SPRestService: SharePointRestService;
 
   constructor(props: ISimpleAnalyticsProps) {
     super(props);
+
+    this.SPRestService = new SharePointRestService(props.context);
 
     this.state = {
       title: '',
@@ -43,86 +46,55 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
   }
 
   private _getHubSites(): void {
-    const ctx = this.props.context;
-    const siteUrl = ctx.pageContext.web.absoluteUrl;
-    try {
-      ctx.spHttpClient.get(`${siteUrl}/_api/hubsites`, SPHttpClient.configurations.v1).then((response: SPHttpClientResponse) => {
-        return response.json();
-      }).then((data: any) => {
-        console.log("Recieved hub sites", data);
-        const hubsites: IHubSite[] = [];
-        data.value.forEach((hub: any) => {
-          hubsites.push({
-            title: hub.Title,
-            url: hub.SiteUrl,
-            id: hub.ID
-          });
+    this.SPRestService.getHubSites().then((data: any) => {
+      console.log('Received hub sites', data);
+      const hubsites: IHubSite[] = [];
+      data.value.forEach((hub: any) => {
+        hubsites.push({
+          title: hub.Title,
+          url: hub.SiteUrl,
+          id: hub.ID,
         });
-        this.setState({ hubsites: hubsites });
-      }).catch((error: any) => {
-        console.error("Fail at hub sites query", error);
       });
-
-    } catch (error) {
+      this.setState({ hubsites: hubsites, selectedHubSite: hubsites.length > 0 ? hubsites[0] : undefined });
+      this._getSiteAnalytics();
+    }).catch((error: any) => {
       console.error("Error at hubsites", error);
-    }
+    });
   }
 
-  
+
 
   private _getSiteAnalytics(): void {
-
-    // query the SharePoint REST API to get the site analytics
-    // use /_api/search/query?querytext=%27Path:https://[path_to_your_intranet_site]*%20(contentclass=STS_Site%20OR%20contentclass=STS_Web)%27&selectproperties=%27Title,ViewsLast1Days,ViewsLast2Days,ViewsLast3Days,ViewsLast4Days,ViewsLast5Days,ViewsLast6Days,ViewsLast7Days,ViewsRecent,ViewsLastMonths1,ViewsLastMonths2,ViewsLastMonths3,ViewsLifetime,Path%27&orderBy=ViewsRecent&trimDuplicates=false&rowlimit=500
-    // to get the analytics data for all the sites in the hub
-
-    const ctx = this.props.context;
-    const siteUrl = this.state.selectedHubSite ? this.state.selectedHubSite.url : "";
-    const selectProperties = "Title,ViewsLast1Days,ViewsLast2Days,ViewsLast3Days,ViewsLast4Days,ViewsLast5Days,ViewsLast6Days,ViewsLast7Days,ViewsRecent,ViewsLastMonths1,ViewsLastMonths2,ViewsLastMonths3,ViewsLifetime,Path"
-    const rowLimit = 500;
-    // const additionalQuery = "%20(contentclass=STS_Site%20OR%20contentclass=STS_Web)"
-    const additionalQuery = "%20(contentclass=STS_Site%20OR%20contentclass=STS_ListItem_WebPageLibrary)"
-    const orderBy = "ViewsRecent";
-    const useAddtionalQuery = true;
-    try {
-      const url: string = `${ctx.pageContext.web.absoluteUrl}/_api/search/query?querytext=%27Path:${siteUrl}*${useAddtionalQuery ? additionalQuery : ""}%27&selectproperties=%27${selectProperties}%27&orderBy=${orderBy}&trimDuplicates=false&rowlimit=${rowLimit}`;
-      ctx.spHttpClient.get(url, SPHttpClient.configurations.v1)
-        .then((response: SPHttpClientResponse) => {
-          return response.json();
-        })
-        .then((data: any) => {
-          console.log("Recieved analytics", data);
-          const views: IAnalyticsStat[] = [];
-          data.PrimaryQueryResult.RelevantResults.Table.Rows.forEach((row: any) => {
-            const stat = {
-              title: AnalyticsHelper.getTextCellValue(row, "Title"),
-              path: AnalyticsHelper.getTextCellValue(row, "Path"),
-              viewsLifetime: AnalyticsHelper.getCellValue(row, "ViewsLifetime"),
-              viewsRecent: AnalyticsHelper.getCellValue(row, "ViewsRecent"),
-              contentclass: AnalyticsHelper.getTextCellValue(row, "contentclass"),
-              viewsLast1Days: AnalyticsHelper.getCellValue(row, "ViewsLast1Days"),
-              viewsLast2Days: AnalyticsHelper.getCellValue(row, "ViewsLast2Days"),
-              viewsLast3Days: AnalyticsHelper.getCellValue(row, "ViewsLast3Days"),
-              viewsLast4Days: AnalyticsHelper.getCellValue(row, "ViewsLast4Days"),
-              viewsLast5Days: AnalyticsHelper.getCellValue(row, "ViewsLast5Days"),
-              viewsLast6Days: AnalyticsHelper.getCellValue(row, "ViewsLast6Days"),
-              viewsLast7Days: AnalyticsHelper.getCellValue(row, "ViewsLast7Days"),
-              viewsLastMonths1: AnalyticsHelper.getCellValue(row, "ViewsLastMonths1"),
-              viewsLastMonths2: AnalyticsHelper.getCellValue(row, "ViewsLastMonths2"),
-              viewsLastMonths3: AnalyticsHelper.getCellValue(row, "ViewsLastMonths3")
-            };
-            if (stat.viewsRecent > 0 && stat.viewsLifetime > 0) {
-              views.push(stat);
-            }
-          });
-          this.setState({ views: views });
-        }).catch((error: any) => {
-          console.error("Fail at analytics query", error);
-        });
-
-    } catch (error) {
-      console.error(error);
-    }
+    const { selectedHubSite, additionalQuery } = this.state;
+    this.SPRestService.getSiteAnalytics(selectedHubSite, additionalQuery).then((data: any) => {
+      const views: IAnalyticsStat[] = [];
+      data.PrimaryQueryResult.RelevantResults.Table.Rows.forEach((row: any) => {
+        const stat = {
+          title: AnalyticsHelper.getTextCellValue(row, "Title"),
+          path: AnalyticsHelper.getTextCellValue(row, "Path"),
+          viewsLifetime: AnalyticsHelper.getCellValue(row, "ViewsLifetime"),
+          viewsRecent: AnalyticsHelper.getCellValue(row, "ViewsRecent"),
+          contentclass: AnalyticsHelper.getTextCellValue(row, "contentclass"),
+          viewsLast1Days: AnalyticsHelper.getCellValue(row, "ViewsLast1Days"),
+          viewsLast2Days: AnalyticsHelper.getCellValue(row, "ViewsLast2Days"),
+          viewsLast3Days: AnalyticsHelper.getCellValue(row, "ViewsLast3Days"),
+          viewsLast4Days: AnalyticsHelper.getCellValue(row, "ViewsLast4Days"),
+          viewsLast5Days: AnalyticsHelper.getCellValue(row, "ViewsLast5Days"),
+          viewsLast6Days: AnalyticsHelper.getCellValue(row, "ViewsLast6Days"),
+          viewsLast7Days: AnalyticsHelper.getCellValue(row, "ViewsLast7Days"),
+          viewsLastMonths1: AnalyticsHelper.getCellValue(row, "ViewsLastMonths1"),
+          viewsLastMonths2: AnalyticsHelper.getCellValue(row, "ViewsLastMonths2"),
+          viewsLastMonths3: AnalyticsHelper.getCellValue(row, "ViewsLastMonths3")
+        };
+        if (stat.viewsRecent > 0 && stat.viewsLifetime > 0) {
+          views.push(stat);
+        }
+      });
+      this.setState({ views: views });
+    }).catch((error: any) => {
+      console.error("Error at views", error);
+    });
 
   }
 
@@ -199,8 +171,8 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
     }
   }
 
-  private _selectHubSite = (event: React.FormEvent<HTMLDivElement>, item: {key:string, value: string}): void => {
-    const selectedHubSite = this.state.hubsites.find((hub:IHubSite) => hub.url === item.key);
+  private _selectHubSite = (event: FormEvent<HTMLDivElement>, option: IDropdownOption, index: number): void => {
+    const selectedHubSite = this.state.hubsites.find((hub: IHubSite) => hub.url === option.key);
     this.setState({ selectedHubSite: selectedHubSite });
     this._getSiteAnalytics();
   }
@@ -220,7 +192,6 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
 
 
   public render(): React.ReactElement<ISimpleAnalyticsProps> {
-
     const { sortByLifetime, sortByRecent, sortByName, hubsites, selectedHubSite, sortBy, expandedIndex, additionalQuery, isAscending, views } = this.state;
     const hubSiteOptions = hubsites.map((hub: any) => {
       return {
@@ -228,7 +199,6 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
         text: hub.title
       };
     });
-
     const sortOptions = [
       { key: 'Name', text: 'Name' },
       { key: 'Recent', text: 'Recent Views' },
@@ -346,8 +316,6 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
             })}
           </div>
         </div>
-
-
       </section>
     );
   }
