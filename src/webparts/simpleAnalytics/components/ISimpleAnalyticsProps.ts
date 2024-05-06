@@ -7,4 +7,5 @@ export interface ISimpleAnalyticsProps {
   hasTeamsContext: boolean;
   userDisplayName: string;
   context: WebPartContext;
+  localization: string;
 }
