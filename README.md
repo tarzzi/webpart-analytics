@@ -1,10 +1,14 @@
-# webpart-analytics
+# Simple Analytics Dashboard
 
 ## Summary
 
-Short summary on functionality and used technologies.
+This is an page view analytics webpart that provides a simple analytics  dashboard straight from SharePoint data.  
 
-[picture of the solution in action, if possible]
+It uses the SharePoint REST API to fetch site analytics data and displays it in a user-friendly format. The web part is configurable with properties such as description and localization which can be set in the property pane.
+
+It retrieves all hubsites for selection and then displays the analytics data for the selected hubsite. The data is displayed in a simple table format, based on available data retrieved from the REST API.
+
+![sa.png](sa.png)
 
 ## Used SharePoint Framework Version
 
@@ -25,14 +29,13 @@ Short summary on functionality and used technologies.
 
 | Solution    | Author(s)                                               |
 | ----------- | ------------------------------------------------------- |
-| folder name | Author details (name, company, twitter alias with link) |
+| Simple Analytics | [Tarmo Urrio](https://github.com/tarzzi) |
 
 ## Version history
 
 | Version | Date             | Comments        |
 | ------- | ---------------- | --------------- |
-| 1.1     | March 10, 2021   | Update comment  |
-| 1.0     | January 29, 2021 | Initial release |
+| 1.0     | May 6, 2024   | Initial version  |
 
 ## Disclaimer
 
