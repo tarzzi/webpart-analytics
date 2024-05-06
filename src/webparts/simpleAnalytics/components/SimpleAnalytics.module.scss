@@ -8,6 +8,46 @@
   &.teams {
     font-family: $ms-font-family-fallbacks;
   }
+  a {
+    text-decoration: none;
+    color: '[theme:link, default:#03787c]';
+    color: var(
+      --link
+    ); 
+
+    &:hover {
+      text-decoration: underline;
+      color: '[theme:linkHovered, default: #014446]';
+      color: var(
+        --linkHovered
+      ); 
+    }
+
+    &:active {
+      color: '[theme:linkPressed, default: #005e5c]';
+      color: var(
+        --linkPressed
+      ); 
+    }
+
+    &:focus {
+      color: '[theme:linkHovered, default: #014446]';
+      color: var(
+        --linkHovered
+      ); 
+    }
+
+    &:visited {
+      color: '[theme:link, default:#03787c]';
+      color: var(
+        --link
+      ); 
+    }
+  }
+}
+
+.flexAlign {
+  align-items: center;
 }
 
 .welcome {
@@ -23,11 +63,11 @@
   font-weight: bold;
 }
 
-.siteheader{
+.siteheader {
   margin-bottom: 2px;
 }
 
-.path{
+.path {
   font-size: 11px;
   margin-bottom: 5px;
 }
@@ -35,21 +75,29 @@
 .dropdown {
   min-width: 150px;
 }
-
-.links {
-  a {
-    text-decoration: none;
-    color: '[theme:link, default:#03787c]';
-    color: var(
-      --link
-    ); // note: CSS Custom Properties support is limited to modern browsers only
-
-    &:hover {
-      text-decoration: underline;
-      color: '[theme:linkHovered, default: #014446]';
-      color: var(
-        --linkHovered
-      ); // note: CSS Custom Properties support is limited to modern browsers only
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  tr {
+    border-bottom: 1px solid var(--neutralLight);
+    border-bottom: 1px solid '[theme:neutralLight, default: #edebe9]';
+    &:last-child {
+      border-bottom: none;
     }
+  }
+  th {
+    padding: 10px;
+    text-align: center; 
+    border-bottom: 1px solid var(--neutralLight);
+    border-bottom: 1px solid '[theme:neutralLight, default: #edebe9]';
+  }
+  td {
+    padding: 10px;
+    text-align: center; 
+    border-bottom: 1px solid var(--neutralLight);
+    border-bottom: 1px solid '[theme:neutralLight, default: #edebe9]';
   }
 }

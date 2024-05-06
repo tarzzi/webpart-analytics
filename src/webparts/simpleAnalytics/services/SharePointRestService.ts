@@ -1,7 +1,6 @@
 import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 import { IHubSite } from './../models/IHubsite';
-import { IAnalyticsStat } from '../models/IAnalyticsStat';
 
 export class SharePointRestService {
   private context: WebPartContext;
@@ -29,11 +28,11 @@ export class SharePointRestService {
   public async getSiteAnalytics(
     selectedHubSite: any,
     addQuery: string | undefined
-  ): Promise<IAnalyticsStat[]> {
+  ): Promise<any> {
     // query the SharePoint REST API to get the site analytics
     // use /_api/search/query?querytext=%27Path:https://[path_to_your_intranet_site]*%20(contentclass=STS_Site%20OR%20contentclass=STS_Web)%27&selectproperties=%27Title,ViewsLast1Days,ViewsLast2Days,ViewsLast3Days,ViewsLast4Days,ViewsLast5Days,ViewsLast6Days,ViewsLast7Days,ViewsRecent,ViewsLastMonths1,ViewsLastMonths2,ViewsLastMonths3,ViewsLifetime,Path%27&orderBy=ViewsRecent&trimDuplicates=false&rowlimit=500
     // to get the analytics data for all the sites in the hub
-
+    console.log("Searching for analytics, with hub site", selectedHubSite.url)
     const ctx = this.context;
     const siteUrl = selectedHubSite ? selectedHubSite.url : '';
     const selectProperties =

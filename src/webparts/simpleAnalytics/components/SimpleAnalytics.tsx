@@ -1,13 +1,14 @@
 import * as React from 'react';
 import styles from './SimpleAnalytics.module.scss';
 import type { ISimpleAnalyticsProps } from './ISimpleAnalyticsProps';
-import { DefaultButton, Dropdown, IDropdownOption, Stack, TextField } from '@fluentui/react';
+import { DefaultButton, Dropdown, IDropdownOption, Stack } from '@fluentui/react';
 import { ISimpleAnalyticsState } from './ISimpleAnalyticsState';
 import { IAnalyticsStat } from '../models/IAnalyticsStat';
 import { IHubSite } from '../models/IHubsite';
 import { SharePointRestService } from '../services/SharePointRestService';
 import { FormEvent } from 'react';
 import { AnalyticsHelper } from '../helpers/AnalyticsHelpers';
+
 
 
 export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsProps, ISimpleAnalyticsState> {
@@ -18,20 +19,23 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
     super(props);
 
     this.SPRestService = new SharePointRestService(props.context);
+    const dateStrings = new AnalyticsHelper(props.localization).generateDateStrings();
 
     this.state = {
+      isLoading: false,
+      hasError: false,
       title: '',
       query: '',
       additionalQuery: '',
       views: [],
-      expandedIndex: -1,
       sortBy: 'Name',
       sortByName: false,
       sortByRecent: false,
       sortByLifetime: false,
       isAscending: false,
       hubsites: [],
-      selectedHubSite: undefined
+      selectedHubSite: undefined,
+      dateStrings: dateStrings
     };
 
     this._getSiteAnalytics = this._getSiteAnalytics.bind(this);
@@ -42,6 +46,7 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
   }
 
   public componentDidMount(): void {
+    this.setState({ isLoading: true });
     this._getHubSites();
   }
 
@@ -49,7 +54,7 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
     this.SPRestService.getHubSites().then((data: any) => {
       console.log('Received hub sites', data);
       const hubsites: IHubSite[] = [];
-      data.value.forEach((hub: any) => {
+      data.forEach((hub: any) => {
         hubsites.push({
           title: hub.Title,
           url: hub.SiteUrl,
@@ -57,7 +62,10 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
         });
       });
       this.setState({ hubsites: hubsites, selectedHubSite: hubsites.length > 0 ? hubsites[0] : undefined });
-      this._getSiteAnalytics();
+      this._getSiteAnalytics().catch((error: any) => {
+        this.setState({ isLoading: false, hasError: true });
+        console.error('Error at fetching data', error);
+      });
     }).catch((error: any) => {
       console.error("Error at hubsites", error);
     });
@@ -65,36 +73,56 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
 
 
 
-  private _getSiteAnalytics(): void {
+  private async _getSiteAnalytics(dropdownSelect?: any): Promise<void> {
+    console.log("Getting analytics");
     const { selectedHubSite, additionalQuery } = this.state;
-    this.SPRestService.getSiteAnalytics(selectedHubSite, additionalQuery).then((data: any) => {
-      const views: IAnalyticsStat[] = [];
-      data.PrimaryQueryResult.RelevantResults.Table.Rows.forEach((row: any) => {
-        const stat = {
-          title: AnalyticsHelper.getTextCellValue(row, "Title"),
-          path: AnalyticsHelper.getTextCellValue(row, "Path"),
-          viewsLifetime: AnalyticsHelper.getCellValue(row, "ViewsLifetime"),
-          viewsRecent: AnalyticsHelper.getCellValue(row, "ViewsRecent"),
-          contentclass: AnalyticsHelper.getTextCellValue(row, "contentclass"),
-          viewsLast1Days: AnalyticsHelper.getCellValue(row, "ViewsLast1Days"),
-          viewsLast2Days: AnalyticsHelper.getCellValue(row, "ViewsLast2Days"),
-          viewsLast3Days: AnalyticsHelper.getCellValue(row, "ViewsLast3Days"),
-          viewsLast4Days: AnalyticsHelper.getCellValue(row, "ViewsLast4Days"),
-          viewsLast5Days: AnalyticsHelper.getCellValue(row, "ViewsLast5Days"),
-          viewsLast6Days: AnalyticsHelper.getCellValue(row, "ViewsLast6Days"),
-          viewsLast7Days: AnalyticsHelper.getCellValue(row, "ViewsLast7Days"),
-          viewsLastMonths1: AnalyticsHelper.getCellValue(row, "ViewsLastMonths1"),
-          viewsLastMonths2: AnalyticsHelper.getCellValue(row, "ViewsLastMonths2"),
-          viewsLastMonths3: AnalyticsHelper.getCellValue(row, "ViewsLastMonths3")
-        };
-        if (stat.viewsRecent > 0 && stat.viewsLifetime > 0) {
-          views.push(stat);
-        }
-      });
-      this.setState({ views: views });
+
+    if (!selectedHubSite) {
+      console.error('No hub site selected');
+      return;
+    }
+
+    const hub = dropdownSelect ? dropdownSelect : selectedHubSite;
+
+    const stats = await this.SPRestService.getSiteAnalytics(hub, additionalQuery).then((data: any) => {
+      return data;
     }).catch((error: any) => {
       console.error("Error at views", error);
     });
+
+    console.log("SimpleaAnalytics.tsx got analytics", stats)
+    const views: IAnalyticsStat[] = [];
+    this.setState({ isLoading: false });
+    stats.PrimaryQueryResult.RelevantResults.Table.Rows.forEach((row: any) => {
+      const stat = {
+        title: AnalyticsHelper.getTextCellValue(row, "Title"),
+        path: AnalyticsHelper.getTextCellValue(row, "Path"),
+        viewsLifetime: AnalyticsHelper.getCellValue(row, "ViewsLifetime"),
+        viewsRecent: AnalyticsHelper.getCellValue(row, "ViewsRecent"),
+        contentclass: AnalyticsHelper.getTextCellValue(row, "contentclass"),
+        viewsLast1Days: AnalyticsHelper.getCellValue(row, "ViewsLast1Days"),
+        viewsLast2Days: AnalyticsHelper.getCellValue(row, "ViewsLast2Days"),
+        viewsLast3Days: AnalyticsHelper.getCellValue(row, "ViewsLast3Days"),
+        viewsLast4Days: AnalyticsHelper.getCellValue(row, "ViewsLast4Days"),
+        viewsLast5Days: AnalyticsHelper.getCellValue(row, "ViewsLast5Days"),
+        viewsLast6Days: AnalyticsHelper.getCellValue(row, "ViewsLast6Days"),
+        viewsLast7Days: AnalyticsHelper.getCellValue(row, "ViewsLast7Days"),
+        viewsLastMonths1: AnalyticsHelper.getCellValue(row, "ViewsLastMonths1"),
+        viewsLastMonths2: AnalyticsHelper.getCellValue(row, "ViewsLastMonths2"),
+        viewsLastMonths3: AnalyticsHelper.getCellValue(row, "ViewsLastMonths3")
+      };
+      views.push(stat);
+      // Should make a option to show 0 views?
+      /* if (stat.viewsRecent > 0 && stat.viewsLifetime > 0) {
+        views.push(stat);
+      } else {
+        console.log("Skipping", stat);
+      } */
+    });
+    const newViews = [...views];
+    this.setState({ views: newViews });
+    console.log("Finished getting analytics", views);
+    console.log("State is", this.state.views)
 
   }
 
@@ -173,8 +201,12 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
 
   private _selectHubSite = (event: FormEvent<HTMLDivElement>, option: IDropdownOption, index: number): void => {
     const selectedHubSite = this.state.hubsites.find((hub: IHubSite) => hub.url === option.key);
-    this.setState({ selectedHubSite: selectedHubSite });
-    this._getSiteAnalytics();
+    this.setState({ selectedHubSite: selectedHubSite, isLoading: true }, () => {
+      this._getSiteAnalytics().catch((error: any) => {
+        this.setState({ isLoading: false, hasError: true });
+        console.error('Error at fetching data', error);
+      });
+    });
   }
 
   private _toggleSortOrder = (): void => {
@@ -190,9 +222,8 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
     }
   }
 
-
   public render(): React.ReactElement<ISimpleAnalyticsProps> {
-    const { sortByLifetime, sortByRecent, sortByName, hubsites, selectedHubSite, sortBy, expandedIndex, additionalQuery, isAscending, views } = this.state;
+    const { isLoading, dateStrings, sortByLifetime, sortByRecent, hubsites, selectedHubSite, sortBy, isAscending, views } = this.state;
     const hubSiteOptions = hubsites.map((hub: any) => {
       return {
         key: hub.url,
@@ -209,109 +240,75 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
       <section className={`${styles.simpleAnalytics}`}>
         <h2>Simple Analytics</h2>
         <Stack tokens={{ childrenGap: 10 }}>
-          <Stack horizontal tokens={{ childrenGap: 10 }}>
+          <Stack horizontal tokens={{ childrenGap: 10 }} className={styles.flexAlign}>
             <span>Statistics about: </span>
             <Dropdown options={hubSiteOptions}
               className={styles.dropdown}
               defaultSelectedKey={hubsites.length > 0 ? hubsites[0].url : undefined}
               selectedKey={selectedHubSite ? selectedHubSite.url : undefined}
               onChange={this._selectHubSite} />
-            <span> with additional query of: </span>
-            <TextField value={additionalQuery} onChange={(ev, newValue) => this.setState({ additionalQuery: newValue })} />
-          </Stack>
-          <Stack horizontal tokens={{ childrenGap: 10 }}>
             <span>Sorted by </span>
             <Dropdown defaultSelectedKey={sortOptions[0].key} selectedKey={sortBy} options={sortOptions} className={styles.dropdown} onChange={(ev, item) => {
               if (!item) return;
               switch (item.key) {
                 case 'Name':
-
                   this._sortByName();
+                  this.setState({ sortBy: 'Name' });
                   break;
                 case 'Recent':
                   this._sortViewsByRecent();
+                  this.setState({ sortBy: 'Recent' });
                   break;
                 case 'Lifetime':
                   this._sortViewsByLifetime();
+                  this.setState({ sortBy: 'Lifetime' });
+
                   break;
               }
             }} />
             <DefaultButton text={isAscending ? "Desc ↓" : "Asc ↑"} onClick={this._toggleSortOrder} />
+            {isLoading && <span>Loading...</span>}
+            {!isLoading && <span>Found {views.length} results</span>}
           </Stack>
         </Stack>
         <div>
           <div style={{ display: 'grid' }}>
             {views.map((view, index) => {
               return (
-                <div key={index} style={{ display: 'flex', flexDirection: 'column' }}>
-                  <h4 className={styles.siteheader}>{view.title}</h4>
-                  <span>Path: {view.path}</span>
-                  <span className={sortByRecent ? styles.bold : ''}>Recent views: {view.viewsRecent}</span>
-                  <span className={sortByLifetime ? styles.bold : ''}>Lifetime views: {view.viewsLifetime}</span>
-                  <DefaultButton text={expandedIndex !== index ? 'Expand' : 'Close'} style={{ maxWidth: "100px" }} onClick={() => {
-                    if (expandedIndex === index) {
-                      this.setState({ expandedIndex: -1 });
-                      return;
-                    }
-                    this.setState({ expandedIndex: index })
-                  }
-                  }>Expand</DefaultButton>
-                  {this.state.expandedIndex === index && (<>
-
-                    <span className={sortByName ? styles.bold : ''}>Content Class: {view.contentclass}</span>
-                    <table>
+                <Stack key={index} horizontal tokens={{ childrenGap: 20 }}>
+                  <div key={index} style={{ display: 'flex', flexDirection: 'column', minWidth: '200px' }}>
+                    <h4 className={styles.siteheader}><a href={view.path} target="_blank" rel="noopener noreferrer">{view.title}</a> </h4>
+                    <span style={{ fontStyle: 'italic', fontSize: '10px' }}>Url: {view.path.split('sites')[1]}</span>
+                    <span className={sortByRecent ? styles.bold : ''}>Recent views: {view.viewsRecent}</span>
+                    <span>Three months: {Number(view.viewsLastMonths1) + Number(view.viewsLastMonths2) + Number(view.viewsLastMonths3)} </span>
+                    <span style={{ marginBottom: '10px' }} className={sortByLifetime ? styles.bold : ''}>Lifetime views: {view.viewsLifetime}</span>
+                  </div>
+                  <div>
+                    <table className={styles.table}>
                       <thead>
                         <tr>
-                          <th>Days</th>
-                          <th>Views</th>
+                          {Object.values(dateStrings).map((key) => (
+                            <th key={key}>{key}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
-                          <td>Last 1 Day</td>
                           <td>{view.viewsLast1Days}</td>
-                        </tr>
-                        <tr>
-                          <td>Last 2 Days</td>
                           <td>{view.viewsLast2Days}</td>
-                        </tr>
-                        <tr>
-                          <td>Last 3 Days</td>
                           <td>{view.viewsLast3Days}</td>
-                        </tr>
-                        <tr>
-                          <td>Last 4 Days</td>
                           <td>{view.viewsLast4Days}</td>
-                        </tr>
-                        <tr>
-                          <td>Last 5 Days</td>
                           <td>{view.viewsLast5Days}</td>
-                        </tr>
-                        <tr>
-                          <td>Last 6 Days</td>
                           <td>{view.viewsLast6Days}</td>
-                        </tr>
-                        <tr>
-                          <td>Last 7 Days</td>
                           <td>{view.viewsLast7Days}</td>
-                        </tr>
-                        <tr>
-                          <td>Last Month</td>
                           <td>{view.viewsLastMonths1}</td>
-                        </tr>
-                        <tr>
-                          <td>Last 2 Months</td>
                           <td>{view.viewsLastMonths2}</td>
-                        </tr>
-                        <tr>
-                          <td>Last 3 Months</td>
                           <td>{view.viewsLastMonths3}</td>
                         </tr>
                       </tbody>
                     </table>
-                  </>
-                  )}
-                </div>
+                  </div>
+                </Stack>
               );
             })}
           </div>

@@ -11,6 +11,7 @@ declare interface ISimpleAnalyticsWebPartStrings {
   AppOfficeEnvironment: string;
   AppOutlookEnvironment: string;
   UnknownEnvironment: string;
+  LocalizationFieldLabel: string;
 }
 
 declare module 'SimpleAnalyticsWebPartStrings' {

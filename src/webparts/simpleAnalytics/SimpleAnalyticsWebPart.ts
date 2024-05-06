@@ -3,7 +3,8 @@ import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
-  PropertyPaneTextField
+  PropertyPaneTextField,
+  PropertyPaneDropdown
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
@@ -14,6 +15,7 @@ import { ISimpleAnalyticsProps } from './components/ISimpleAnalyticsProps';
 
 export interface ISimpleAnalyticsWebPartProps {
   description: string;
+  localization: string;
 }
 
 
@@ -32,7 +34,8 @@ export default class SimpleAnalyticsWebPart extends BaseClientSideWebPart<ISimpl
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
         userDisplayName: this.context.pageContext.user.displayName,
-        context: this.context
+        context: this.context,
+        localization: this.properties.localization
       }
     );
 
@@ -113,7 +116,25 @@ export default class SimpleAnalyticsWebPart extends BaseClientSideWebPart<ISimpl
               groupFields: [
                 PropertyPaneTextField('description', {
                   label: strings.DescriptionFieldLabel
-                })
+                }),
+                PropertyPaneDropdown('localization', {
+                  label: strings.LocalizationFieldLabel,
+                  selectedKey: 'en-US',
+                  options: [
+                    { key: 'en-US', text: 'English' },
+                    { key: 'fi-FI', text: 'Finnish'},
+                    { key: 'fr-FR', text: 'French' },
+                    { key: 'de-DE', text: 'German' },
+                    { key: 'es-ES', text: 'Spanish' },
+                    { key: 'it-IT', text: 'Italian' },
+                    { key: 'ja-JP', text: 'Japanese' },
+                    { key: 'ko-KR', text: 'Korean' },
+                    { key: 'nl-NL', text: 'Dutch' },
+                    { key: 'pl-PL', text: 'Polish' },
+                    { key: 'pt-BR', text: 'Portuguese' },
+                  ]
+                }
+                )
               ]
             }
           ]
