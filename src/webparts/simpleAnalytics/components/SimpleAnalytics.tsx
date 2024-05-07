@@ -271,19 +271,19 @@ export default class SimpleAnalytics extends React.Component<ISimpleAnalyticsPro
             {!isLoading && <span>Found {views.length} results</span>}
           </Stack>
         </Stack>
-        <div>
+        <div style={{marginTop:'15px'}}>
           <div style={{ display: 'grid' }}>
             {views.map((view, index) => {
               return (
-                <Stack key={index} horizontal tokens={{ childrenGap: 20 }}>
-                  <div key={index} style={{ display: 'flex', flexDirection: 'column', minWidth: '200px' }}>
+                <Stack key={index} className={styles.siteRow} horizontal tokens={{ childrenGap: 20 }} >
+                  <div key={index} className={styles.siteInfo}>
                     <h4 className={styles.siteheader}><a href={view.path} target="_blank" rel="noopener noreferrer">{view.title}</a> </h4>
                     <span style={{ fontStyle: 'italic', fontSize: '10px' }}>Url: {view.path.split('sites')[1]}</span>
                     <span className={sortByRecent ? styles.bold : ''}>Recent views: {view.viewsRecent}</span>
                     <span>Three months: {Number(view.viewsLastMonths1) + Number(view.viewsLastMonths2) + Number(view.viewsLastMonths3)} </span>
                     <span style={{ marginBottom: '10px' }} className={sortByLifetime ? styles.bold : ''}>Lifetime views: {view.viewsLifetime}</span>
                   </div>
-                  <div>
+                  <div style={{overflowX: 'scroll'}}>
                     <table className={styles.table}>
                       <thead>
                         <tr>

@@ -75,6 +75,19 @@
 .dropdown {
   min-width: 150px;
 }
+.siteRow{
+  border-top: 1px solid lightgray;
+}
+.siteData{}
+.siteInfo{
+  display: 'flex';
+  flex-direction: 'column';
+  min-width: '200px';
+  border-right: 1px solid lightgray;
+  padding-right: 10px;
+  padding-bottom: 10px;
+  min-width: 200px;
+}
 .table {
   width: 100%;
   border-collapse: collapse;
